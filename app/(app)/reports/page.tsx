@@ -125,7 +125,7 @@ export default function ReportsPage() {
                           paddingAngle={3} dataKey="value" animationBegin={0} animationDuration={600}>
                           {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
                         </Pie>
-                        <Tooltip formatter={(v: number, name: string) => [`${v}`, name]}
+                        <Tooltip formatter={(v, name) => [`${v}`, String(name)]}
                           contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', fontSize: 13 }} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -154,7 +154,7 @@ export default function ReportsPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                   <YAxis tickFormatter={v => `₡${(v/1000).toFixed(0)}K`} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                  <Tooltip formatter={(v: number) => [formatCRC(v)]}
+                  <Tooltip formatter={(v) => [formatCRC(Number(v))]}
                     contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', fontSize: 13 }} />
                   <Bar dataKey="value" radius={[6, 6, 0, 0]} animationDuration={600}>
                     {barData.map((e, i) => <Cell key={i} fill={e.fill} />)}

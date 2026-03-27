@@ -56,7 +56,7 @@ function DonutChart({ data }: { data: { name: string; value: number; color: stri
             ))}
           </Pie>
           <Tooltip
-            formatter={(v: number, name: string) => [`${v} miembros`, name]}
+            formatter={(v, name) => [`${v} miembros`, String(name)]}
             contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', fontSize: 13 }}
           />
         </PieChart>
@@ -80,7 +80,7 @@ function TrendChart({ months }: { months: { label: string; collected: number; ou
         <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
         <YAxis tickFormatter={fmt} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
         <Tooltip
-          formatter={(v: number, name: string) => [formatCRC(v), name === 'collected' ? 'Cobrado' : 'Pendiente']}
+          formatter={(v, name) => [formatCRC(Number(v)), name === 'collected' ? 'Cobrado' : 'Pendiente']}
           contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 24px rgba(0,0,0,0.08)', fontSize: 13 }}
         />
         <Bar dataKey="collected" fill="#6366f1" radius={[4, 4, 0, 0]} animationDuration={600} />
