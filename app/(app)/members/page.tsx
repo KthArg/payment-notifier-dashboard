@@ -135,15 +135,19 @@ function MemberModal({
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Member | undefined>();
   const [search, setSearch] = useState('');
 
   async function load() {
     setLoading(true);
+    setLoadError(false);
     try {
       const data = await api.members.list();
       setMembers(data);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -153,8 +157,12 @@ export default function MembersPage() {
 
   async function handleDelete(m: Member) {
     if (!confirm(`¿Desactivar a ${m.fullName}?`)) return;
-    await api.members.delete(m.id);
-    load();
+    try {
+      await api.members.delete(m.id);
+      load();
+    } catch {
+      alert('No se pudo desactivar el miembro. Intenta de nuevo.');
+    }
   }
 
   function openCreate() { setEditing(undefined); setModalOpen(true); }
@@ -188,6 +196,11 @@ export default function MembersPage() {
 
       {loading ? (
         <div className="text-slate-400 text-sm">Cargando...</div>
+      ) : loadError ? (
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 text-center">
+          <p className="text-red-600 text-sm font-medium">No se pudieron cargar los miembros.</p>
+          <button onClick={load} className="mt-3 text-sm text-indigo-600 hover:underline">Reintentar</button>
+        </div>
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
           {filtered.length === 0 ? (

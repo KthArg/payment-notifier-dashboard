@@ -101,27 +101,21 @@ export default function DashboardPage() {
     api.reports.current().then(async (current) => {
       setData(current);
 
-      // Fetch last 5 months for trend
-      const months = [];
-      for (let i = 4; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const m = d.getMonth() + 1;
-        const y = d.getFullYear();
-        try {
-          const r = await api.reports.get(y, m);
-          months.push({
-            label: d.toLocaleString('es', { month: 'short' }),
-            collected: r.stats.totalCollected,
-            outstanding: r.stats.totalOutstanding,
-          });
-        } catch {
-          months.push({
-            label: d.toLocaleString('es', { month: 'short' }),
-            collected: 0,
-            outstanding: 0,
-          });
-        }
-      }
+      // Fetch last 5 months for trend — in parallel
+      const monthDates = Array.from({ length: 5 }, (_, i) =>
+        new Date(now.getFullYear(), now.getMonth() - (4 - i), 1)
+      );
+      const results = await Promise.allSettled(
+        monthDates.map(d => api.reports.get(d.getFullYear(), d.getMonth() + 1))
+      );
+      const months = monthDates.map((d, i) => {
+        const result = results[i];
+        return {
+          label: d.toLocaleString('es', { month: 'short' }),
+          collected:    result.status === 'fulfilled' ? result.value.stats.totalCollected   : 0,
+          outstanding:  result.status === 'fulfilled' ? result.value.stats.totalOutstanding : 0,
+        };
+      });
       setTrendMonths(months);
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);

@@ -13,6 +13,8 @@ export function saveToken(token: string) {
   localStorage.setItem('token', token);
 }
 
+const REQUEST_TIMEOUT_MS = 15_000;
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   const headers: Record<string, string> = {
@@ -21,7 +23,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, { ...options, headers, signal: controller.signal });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('La solicitud tardó demasiado. Verifica tu conexión e intenta de nuevo.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (res.status === 401) {
     clearToken();
@@ -44,7 +59,10 @@ export async function login(password: string): Promise<{ token: string }> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password }),
   });
-  if (!res.ok) throw new Error('Contraseña incorrecta');
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.message ?? 'Contraseña incorrecta');
+  }
   return res.json();
 }
 
@@ -101,6 +119,11 @@ export const api = {
       request<{ data: Member }>(`/api/members/${id}`, { method: 'PUT', body: JSON.stringify(dto) }).then(r => r.data),
     delete: (id: string) =>
       request<void>(`/api/members/${id}`, { method: 'DELETE' }),
+    manualPay: (memberId: string, recordId: string, amountPaid: number, notes?: string) =>
+      request<{ data: MonthlyRecord }>(`/api/members/${memberId}/records/${recordId}/pay`, {
+        method: 'POST',
+        body: JSON.stringify({ amountPaid, notes }),
+      }).then(r => r.data),
   },
 
   reports: {

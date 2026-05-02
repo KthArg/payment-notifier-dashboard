@@ -122,13 +122,17 @@ function LinkMemberModal({
 }) {
   const [memberId, setMemberId] = useState('');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleLink() {
     if (!memberId) return;
     setSaving(true);
+    setError('');
     try {
       await api.sinpeSenders.link(sender.id, memberId);
       onLinked();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'No se pudo vincular el remitente. Intenta de nuevo.');
     } finally {
       setSaving(false);
     }
@@ -143,6 +147,7 @@ function LinkMemberModal({
           <option value="">Seleccionar miembro...</option>
           {members.map(m => <option key={m.id} value={m.id}>{m.fullName}</option>)}
         </select>
+        {error && <p className="text-red-600 text-sm">{error}</p>}
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 border border-slate-200 rounded-xl py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">
             Cancelar
@@ -162,26 +167,37 @@ export default function UnmatchedPage() {
   const [senders, setSenders] = useState<SinpeSender[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [creating, setCreating] = useState<SinpeSender | null>(null);
   const [linking, setLinking] = useState<SinpeSender | null>(null);
 
   async function load() {
     setLoading(true);
-    const [s, m] = await Promise.all([
-      api.sinpeSenders.list('unknown'),
-      api.members.list(),
-    ]);
-    setSenders(s);
-    setMembers(m);
-    setLoading(false);
+    setLoadError(false);
+    try {
+      const [s, m] = await Promise.all([
+        api.sinpeSenders.list('unknown'),
+        api.members.list(),
+      ]);
+      setSenders(s);
+      setMembers(m);
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { load(); }, []);
 
   async function handleDismiss(sender: SinpeSender) {
     if (!confirm(`¿Descartar a ${sender.fullName ?? sender.phoneNumber}? Las transacciones futuras de este número no generarán notificaciones.`)) return;
-    await api.sinpeSenders.dismiss(sender.id);
-    load();
+    try {
+      await api.sinpeSenders.dismiss(sender.id);
+      load();
+    } catch {
+      alert('No se pudo descartar el remitente. Intenta de nuevo.');
+    }
   }
 
   return (
@@ -196,6 +212,11 @@ export default function UnmatchedPage() {
       {loading ? (
         <div className="flex items-center justify-center min-h-48">
           <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : loadError ? (
+        <div className="bg-red-50 border border-red-100 rounded-2xl p-6 text-center">
+          <p className="text-red-600 text-sm font-medium">No se pudieron cargar los remitentes.</p>
+          <button onClick={load} className="mt-3 text-sm text-indigo-600 hover:underline">Reintentar</button>
         </div>
       ) : senders.length === 0 ? (
         <div className="animate-fade-up bg-white rounded-2xl border border-slate-100 p-10 text-center">

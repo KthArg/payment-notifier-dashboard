@@ -10,18 +10,26 @@ export default function ExternalPage() {
 
   async function load() {
     setLoading(true);
-    api.sinpeSenders.list('dismissed')
-      .then(setSenders)
-      .catch(() => setSenders([]))
-      .finally(() => setLoading(false));
+    try {
+      const data = await api.sinpeSenders.list('dismissed');
+      setSenders(data);
+    } catch {
+      setSenders([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { load(); }, []);
 
   async function handleRevert(sender: SinpeSender) {
     if (!confirm(`¿Reactivar notificaciones para ${sender.fullName ?? sender.phoneNumber}?`)) return;
-    await api.sinpeSenders.revert(sender.id);
-    load();
+    try {
+      await api.sinpeSenders.revert(sender.id);
+      load();
+    } catch {
+      alert('No se pudo reactivar el remitente. Intenta de nuevo.');
+    }
   }
 
   return (

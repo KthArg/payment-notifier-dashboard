@@ -24,11 +24,18 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    api.reports.get(year, month)
-      .then(setData)
-      .catch(() => setData(null))
-      .finally(() => setLoading(false));
+    async function fetchReport() {
+      setLoading(true);
+      try {
+        const result = await api.reports.get(year, month);
+        setData(result);
+      } catch {
+        setData(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchReport();
   }, [year, month]);
 
   function prevMonth() {
